@@ -17,30 +17,66 @@ class HistoryManager:
         self._init_db()
 
     def _init_db(self):
-        """初始化数据库表结构。"""
+        """初始化数据库表结构（含旧库迁移）。"""
+        need_columns = ["username", "month"]
+        existing_columns = self._get_columns()
+
+        # 老库缺列时补列，全新库则正常建表
+        if existing_columns:
+            for col in need_columns:
+                if col not in existing_columns:
+                    self._alter_add_column(col)
+        else:
+            conn = sqlite3.connect(self.db_path)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS history (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    created_at  TEXT    NOT NULL,
+                    username    TEXT,
+                    month       INTEGER,
+                    region      TEXT    NOT NULL,
+                    usage       REAL    NOT NULL,
+                    total       REAL    NOT NULL,
+                    tiers       TEXT    NOT NULL,
+                    current_tier INTEGER
+                )
+            """)
+            conn.commit()
+            conn.close()
+
+    def _get_columns(self):
+        """返回 history 表的全部列名；表不存在时返回空列表。"""
         conn = sqlite3.connect(self.db_path)
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS history (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_at  TEXT    NOT NULL,
-                region      TEXT    NOT NULL,
-                usage       REAL    NOT NULL,
-                total       REAL    NOT NULL,
-                tiers       TEXT    NOT NULL,
-                current_tier INTEGER
-            )
-        """)
+        try:
+            rows = conn.execute("PRAGMA table_info(history)").fetchall()
+        except sqlite3.OperationalError:
+            rows = []
+        conn.close()
+        return [r[1] for r in rows]
+
+    def _alter_add_column(self, col, ddl="TEXT"):
+        """给 history 表追加一列。"""
+        conn = sqlite3.connect(self.db_path)
+        conn.execute(f"ALTER TABLE history ADD COLUMN {col} {ddl}")
         conn.commit()
         conn.close()
 
-    def save(self, region, usage, total, tiers, current_tier):
-        """保存一条计算记录。"""
+    def save(self, region, usage, total, tiers, current_tier, username=None, month=None):
+        """保存一条计算记录。
+
+        Args:
+            username: 用户名（纯标签，可为空）
+            month: 月份（1-12，可为空）
+        """
         conn = sqlite3.connect(self.db_path)
         conn.execute(
-            "INSERT INTO history (created_at, region, usage, total, tiers, current_tier) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO history "
+            "(created_at, username, month, region, usage, total, tiers, current_tier) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                username,
+                month,
                 region,
                 usage,
                 total,
@@ -54,7 +90,8 @@ class HistoryManager:
     def query(self, region=None, min_usage=None, max_usage=None, limit=100):
         """按条件查询历史记录。"""
         conn = sqlite3.connect(self.db_path)
-        sql = "SELECT id, created_at, region, usage, total, tiers, current_tier FROM history WHERE 1=1"
+        sql = ("SELECT id, created_at, username, month, region, usage, total, "
+               "tiers, current_tier FROM history WHERE 1=1")
         params = []
 
         if region:
@@ -78,11 +115,13 @@ class HistoryManager:
             {
                 "id": r[0],
                 "created_at": r[1],
-                "region": r[2],
-                "usage": r[3],
-                "total": r[4],
-                "tiers": json.loads(r[5]),
-                "current_tier": r[6],
+                "username": r[2],
+                "month": r[3],
+                "region": r[4],
+                "usage": r[5],
+                "total": r[6],
+                "tiers": json.loads(r[7]),
+                "current_tier": r[8],
             }
             for r in rows
         ]

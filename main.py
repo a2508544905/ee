@@ -1,15 +1,19 @@
-# 这是一个示例 Python 脚本。
+"""程序入口（根目录版）— 启动阶梯电价计算与查询系统
 
-# 按 Shift+F10 执行或将其替换为您的代码。
-# 按 双击 Shift 在所有地方搜索类、文件、工具窗口、操作和设置。
+PyCharm 打开本目录（D:\\作业）后直接运行本文件即可弹出 GUI。
+实际应用位于子目录 electricity/，此处仅做转发。
+"""
 
+import os
+import sys
 
-def print_hi(name):
-    # 在下面的代码行中使用断点来调试脚本。
-    print(f'Hi, {name}')
+# 确保可导入 electricity/ 下的模块
+HERE = os.path.dirname(os.path.abspath(__file__))
+ELECTRICITY_DIR = os.path.join(HERE, "electricity")
+sys.path.insert(0, ELECTRICITY_DIR)
 
-# 按装订区域中的绿色按钮以运行脚本。
-if __name__ == '__main__':
-    print_hi('PyCharm')
+# 复用 electricity/main.py 的入口
+from main import main
 
-# 访问 https://www.jetbrains.com/help/pycharm/ 获取 PyCharm 帮助
+if __name__ == "__main__":
+    main()

@@ -20,6 +20,13 @@
       {"min": 480, "max": null, "price": 0.92}
     ]
   },
+  "贵州": {
+    "tiers": [
+      {"min": 0, "max": 3000, "price": 0.4556},
+      {"min": 3000, "max": 4700, "price": 0.5056},
+      {"min": 4700, "max": null, "price": 0.7556}
+    ]
+  },
   "默认": {
     "tiers": [
       {"min": 0, "max": 200, "price": 0.5},
