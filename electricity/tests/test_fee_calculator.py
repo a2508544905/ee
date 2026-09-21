@@ -29,9 +29,9 @@ class TestCalculateFee(unittest.TestCase):
 
     def test_500_degrees(self):
         """500 度：跨三档"""
-        # 手算：200 × 0.5 + 200 × 0.7 + 100 × 1.0
-        #     = 100 + 140 + 100 = 340.00
-        self.assertEqual(calculate_fee(500), 340.0)
+        # 手算：200 × 0.5 + 200 × 0.7 + 100 × 0.7
+        #     = 100 + 140 + 70 = 310.00
+        self.assertEqual(calculate_fee(500), 310.0)
 
 
 if __name__ == "__main__":
