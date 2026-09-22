@@ -1,5 +1,6 @@
 """右侧功能区：CSV导入 / 导出 / 统计图表"""
 
+import csv
 import tkinter as tk
 from tkinter import ttk
 
@@ -47,12 +48,33 @@ class MorePanel(ttk.LabelFrame):
 
         self.import_btn = ttk.Button(page, text="选择 CSV 文件并导入", command=self._on_import_csv)
         self.import_btn.pack(anchor="w")
+        ttk.Button(page, text="下载导入模板", command=self._download_template).pack(
+            anchor="w", pady=(6, 0))
 
         self.import_state = tk.StringVar(value="")
         ttk.Label(self, textvariable=self.import_state, foreground="#666666", font=("", 9),
                   anchor="w").pack(fill="x", padx=12, pady=(0, 4))
 
     # ── 导出 tab ──
+    def _download_template(self):
+        """生成并下载 CSV 导入模板（表头 + 示例行）。"""
+        from tkinter import filedialog, messagebox
+        path = filedialog.asksaveasfilename(
+            parent=self.master, defaultextension=".csv",
+            filetypes=[("CSV 文件", "*.csv")],
+            initialfile="导入模板.csv")
+        if not path:
+            return
+        try:
+            with open(path, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f)
+                w.writerow(["用户名", "月份", "地区", "用电量"])
+                w.writerow(["A", "1", "贵州", "300"])
+                w.writerow(["B", "2", "贵州", "1500"])
+            messagebox.showinfo("已下载", f"导入模板已保存到：\n{path}")
+        except Exception as exc:
+            messagebox.showerror("下载失败", str(exc))
+
     def _build_export_tab(self):
         """导出历史记录为 CSV 或 Excel。"""
         page = ttk.Frame(self.notebook, padding=16)

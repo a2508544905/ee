@@ -107,11 +107,17 @@ class MainWindow:
 
         # 异常提示
         self.alert_var = tk.StringVar(value="")
+        alert_row = ttk.Frame(left)
+        alert_row.pack(fill="x", pady=(4, 0))
         self.alert_label = ttk.Label(
-            left, textvariable=self.alert_var, foreground=theme.DANGER, anchor="w",
-            wraplength=620, font=("", 9),
+            alert_row, textvariable=self.alert_var, foreground=theme.DANGER,
+            anchor="w", wraplength=560, font=("", 9),
         )
-        self.alert_label.pack(fill="x", pady=(4, 0))
+        self.alert_label.pack(side="left", fill="x", expand=True)
+        self.export_alert_btn = ttk.Button(
+            alert_row, text="导出异常报告", command=self._export_alert_report)
+        self.export_alert_btn.pack(side="right", padx=(6, 0))
+        self._alerts = []
 
         self.more_panel = MorePanel(
             mid, self.calculator,
@@ -247,12 +253,28 @@ class MainWindow:
         """对记录做异常检测并更新异常提示栏。"""
         from lib import anomaly
         alerts = anomaly.detect(records)
+        self._alerts = alerts
         if alerts:
             lines = "\n".join(f"⚠ {a['message']}" for a in alerts[:5])
             extra = f"（共 {len(alerts)} 条）" if len(alerts) > 5 else ""
             self.alert_var.set(f"异常提示：\n{lines}{extra}")
         else:
             self.alert_var.set("")
+
+    def _export_alert_report(self):
+        """把当前异常检测结果导出为 CSV 报告。"""
+        if not self._alerts:
+            messagebox.showinfo("提示", "当前没有异常记录可导出")
+            return
+        path = filedialog.asksaveasfilename(
+            parent=self.root, defaultextension=".csv",
+            filetypes=[("CSV 文件", "*.csv")],
+            initialfile="异常报告.csv")
+        if not path:
+            return
+        from lib import exporter
+        n = exporter.export_alerts(self._alerts, path)
+        messagebox.showinfo("已导出", f"已导出 {n} 条异常到：\n{path}")
 
     # ── 业务编排 ──
     def on_calculate(self):

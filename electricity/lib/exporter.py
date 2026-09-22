@@ -44,6 +44,34 @@ def export_xlsx(records, file_path):
     return len(_records_to_rows(records)) - 1
 
 
+def export_alerts(alerts, file_path):
+    """将异常检测结果导出为 CSV（UTF-8 with BOM）。
+
+    Args:
+        alerts: anomaly.detect() 返回的异常条目列表。
+        file_path: 导出 CSV 目标路径。
+
+    Returns:
+        导出的异常条数。
+    """
+    rows = [["异常级别", "异常信息", "用户名", "月份", "地区", "用电量(度)", "电费(元)", "记录时间"]]
+    for a in alerts:
+        r = a.get("record") or {}
+        rows.append([
+            a.get("level") or "",
+            a.get("message") or "",
+            r.get("username") or "",
+            r.get("month") or "",
+            r.get("region") or "",
+            r.get("usage") or 0,
+            r.get("total") or 0,
+            r.get("created_at") or "",
+        ])
+    with open(file_path, "w", newline="", encoding="utf-8-sig") as f:
+        csv.writer(f).writerows(rows)
+    return len(rows) - 1
+
+
 def export(records, file_path):
     """按文件扩展名自动选择导出格式。
 

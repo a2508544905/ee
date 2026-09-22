@@ -58,7 +58,28 @@ class ChartWindow(Toplevel):
         self.canvas = FigureCanvasTkAgg(self.figure, master=self)
         self.canvas.get_tk_widget().pack(fill="both", expand=True)
 
+        # 底部工具条：保存图片
+        bar = ttk.Frame(self)
+        bar.pack(fill="x", padx=8, pady=6)
+        ttk.Button(bar, text="💾 保存为图片(PNG)", command=self.save_png).pack(side="right")
+
         self._screen_record = None  # 供阶梯图复用当前计算结果
+
+    def save_png(self):
+        """把当前图表另存为 PNG 图片文件。"""
+        from tkinter import filedialog
+        from tkinter import messagebox
+        path = filedialog.asksaveasfilename(
+            parent=self, defaultextension=".png",
+            filetypes=[("PNG 图片", "*.png")],
+            initialfile=self.title().replace(" ", "_") + ".png")
+        if not path:
+            return
+        try:
+            self.figure.savefig(path, dpi=150, bbox_inches="tight")
+            messagebox.showinfo("已保存", f"图片已保存到：\n{path}")
+        except Exception as exc:
+            messagebox.showerror("保存失败", str(exc))
 
     @staticmethod
     def _short_time(created_at):

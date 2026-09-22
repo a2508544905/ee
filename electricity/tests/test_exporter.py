@@ -50,6 +50,25 @@ class TestExporter(unittest.TestCase):
         with self.assertRaises(ValueError):
             export(self.records, path)
 
+    def test_export_alerts(self):
+        from lib.exporter import export_alerts
+        alerts = [
+            {"level": "warn", "message": "测试异常", "record": {
+                "username": "A", "month": 1, "region": "贵州",
+                "usage": 6000, "total": 100, "created_at": "2026-09-22 10:00:00"}},
+            {"level": "error", "message": "负值", "record": {
+                "username": "B", "month": 2, "region": "贵州",
+                "usage": -5, "total": 0, "created_at": "2026-09-22 10:01:00"}},
+        ]
+        path = os.path.join(tempfile.gettempdir(), "alert_test.csv")
+        n = export_alerts(alerts, path)
+        self.assertEqual(n, 2)
+        with open(path, encoding="utf-8-sig") as f:
+            lines = f.read().strip().splitlines()
+        self.assertEqual(len(lines), 3)  # 表头 + 2 行
+        self.assertIn("异常信息", lines[0])
+        os.remove(path)
+
 
 if __name__ == "__main__":
     unittest.main()
