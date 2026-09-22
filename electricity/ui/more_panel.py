@@ -81,7 +81,8 @@ class MorePanel(ttk.LabelFrame):
         ttk.Label(page, text="图表类型：").pack(anchor="w", pady=(0, 4))
         self._chart_kind = ttk.Combobox(
             page, state="readonly", width=16,
-            values=["用电趋势图", "阶梯费用图", "用户对比图"],
+            values=["用电趋势图", "阶梯费用图", "用户对比图",
+                    "档位分布图", "电费构成图"],
         )
         self._chart_kind.current(0)
         self._chart_kind.pack(anchor="w", fill="x")
@@ -110,7 +111,7 @@ class MorePanel(ttk.LabelFrame):
 
     def _on_kind_changed(self, _event=None):
         """切换图表类型时，控制用电量输入行的显隐。"""
-        if self._chart_kind.get() == "阶梯费用图":
+        if self._chart_kind.get() in ("阶梯费用图", "电费构成图"):
             self._usage_row.pack(anchor="w", pady=(8, 0))
         else:
             self._usage_row.pack_forget()
@@ -124,7 +125,9 @@ class MorePanel(ttk.LabelFrame):
             win.show_trend(self._records)
         elif kind == "用户对比图":
             win.show_user_compare(self._records)
-        elif kind == "阶梯费用图":
+        elif kind == "档位分布图":
+            win.show_tier_distribution(self._records)
+        elif kind in ("阶梯费用图", "电费构成图"):
             usage_text = self._usage_entry.get().strip()
             try:
                 usage = float(usage_text)
@@ -132,6 +135,9 @@ class MorePanel(ttk.LabelFrame):
                 win._empty("请输入有效用电量后再绘制")
                 return
             result = self.calculator.calculate(self._current_region, usage)
-            win.show_tier(result)
+            if kind == "阶梯费用图":
+                win.show_tier(result)
+            else:
+                win.show_fee_composition(result)
         else:
             win.destroy()

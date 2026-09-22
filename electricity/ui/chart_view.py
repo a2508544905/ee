@@ -183,6 +183,73 @@ class ChartWindow(Toplevel):
         self.figure.tight_layout()
         self.canvas.draw()
 
+    # ── 4. 档位分布图（用电量在各档位区间分布）──
+    def show_tier_distribution(self, records):
+        """按档案用电量所在档位分组，柱状图展示各档记录数与用电总量。"""
+        self.figure.clear()
+        if not records:
+            self._empty("暂无历史数据")
+            return
+        # 直接用记录里的 current_tier 字段聚合
+        agg = {}
+        labels = []
+        for r in records:
+            tier = r.get("current_tier") or 0
+            tier = int(tier)
+            a = agg.setdefault(tier, [0, 0.0])  # [记录数, 用电量]
+            a[0] += 1
+            a[1] += r.get("usage") or 0
+        if not agg:
+            self._empty("暂无档位数据")
+            return
+        items = sorted(agg.items())
+        labels = [f"第{t}档" for t, _ in items]
+        counts = [v[0] for _, v in items]
+        usages = [v[1] for _, v in items]
+
+        ax = self.figure.add_subplot(111)
+        x = list(range(len(labels)))
+        bars = ax.bar(x, usages, color="#9d7bff", alpha=0.85)
+        for xi, (u, c) in enumerate(zip(usages, counts)):
+            ax.text(xi, u, f"{u:.0f}度\n{c}条", ha="center", va="bottom", fontsize=9,
+                    color="#9d7bff")
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.set_title("用电量档位分布")
+        ax.set_xlabel("档位")
+        ax.set_ylabel("总用电量(度)")
+        ax.grid(True, linestyle="--", alpha=0.4, axis="y")
+        self.figure.tight_layout()
+        self.canvas.draw()
+
+    # ── 5. 电费构成饼图（各档电费贡献占比）──
+    def show_fee_composition(self, result):
+        """按当前计算结果的各档费用绘制饼图，展示每档对总电费的贡献。"""
+        self.figure.clear()
+        usage = result["usage"]
+        tiers = result.get("tiers") or []
+        # 只统计实际用到的档（用量>0）
+        used = [t for t in tiers if t.get("usage", 0) > 0]
+        if not used or result.get("total", 0) <= 0:
+            self._empty("当前用电量未产生电费，无法构成饼图")
+            return
+
+        labels = [f"第{t['tier']}档\n{t['amount']:.2f}元" for t in used]
+        values = [t["amount"] for t in used]
+        colors = ["#2f80ed", "#f2994a", "#eb5757", "#9b51e0", "#27ae60"]
+
+        ax = self.figure.add_subplot(111)
+        wedges, _ = ax.pie(
+            values, labels=labels, colors=colors[:len(used)],
+            autopct="%1.1f%%", startangle=90,
+            textprops={'fontsize': 10},
+        )
+        ax.axis("equal")
+        ax.set_title(
+            f"{result['region']} · 用电 {usage:.0f} 度 · 电费构成 (¥{result['total']:.2f})")
+        self.figure.tight_layout()
+        self.canvas.draw()
+
     # ── 3. 用户对比图（按用户聚合）──
     def show_user_compare(self, records):
         """按用户名聚合总用电量/总电费，柱状图对比。"""

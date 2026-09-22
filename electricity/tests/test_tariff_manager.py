@@ -67,3 +67,56 @@ def test_remove_region():
     })
     mgr.remove_region("广东")
     assert "广东" not in mgr.get_regions()
+
+
+def test_add_tier():
+    """追加一档到地区末尾，并写入文件。"""
+    mgr = _make_manager({
+        "广东": {"tiers": [{"min": 0, "max": 260, "price": 0.59}]},
+    })
+    mgr.add_tier("广东", {"min": 260, "max": None, "price": 0.89})
+    tiers = mgr.get_tiers("广东")
+    assert len(tiers) == 2
+    assert tiers[1]["price"] == 0.89
+
+
+def test_insert_tier():
+    """在指定位置插入一档；后档索引顺延。"""
+    mgr = _make_manager({
+        "广东": {"tiers": [
+            {"min": 0, "max": 260, "price": 0.59},
+            {"min": 600, "max": None, "price": 0.89},
+        ]},
+    })
+    mgr.insert_tier("广东", 1, {"min": 260, "max": 600, "price": 0.64})
+    tiers = mgr.get_tiers("广东")
+    assert len(tiers) == 3
+    assert tiers[1]["price"] == 0.64
+    # 原末档顺延为第 3 档
+    assert tiers[2]["price"] == 0.89
+
+
+def test_remove_tier():
+    """删除指定档位后档数减少。"""
+    mgr = _make_manager({
+        "广东": {"tiers": [
+            {"min": 0, "max": 260, "price": 0.59},
+            {"min": 260, "max": 600, "price": 0.64},
+        ]},
+    })
+    mgr.remove_tier("广东", 0)
+    tiers = mgr.get_tiers("广东")
+    assert len(tiers) == 1
+    assert tiers[0]["price"] == 0.64
+
+
+def test_remove_tier_invalid_index():
+    """删除不存在的档位应抛 IndexError。"""
+    mgr = _make_manager({
+        "广东": {"tiers": [{"min": 0, "max": 260, "price": 0.59}]},
+    })
+    try:
+        mgr.remove_tier("广东", 5)
+        raise AssertionError("应抛出 IndexError")
+    except IndexError:
+        pass

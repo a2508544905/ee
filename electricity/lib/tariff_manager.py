@@ -58,6 +58,26 @@ class TariffManager:
         tiers[tier_index].update(new_values)
         self.save()
 
+    def add_tier(self, region, tier):
+        """在指定地区追加一档。调用方需保证边界正确。"""
+        tiers = self.get_tiers(region)
+        tiers.append(tier)
+        self.save()
+
+    def insert_tier(self, region, tier_index, tier):
+        """在指定地区的 tier_index 位置插入一档。"""
+        tiers = self.get_tiers(region)
+        tiers.insert(tier_index, tier)
+        self.save()
+
+    def remove_tier(self, region, tier_index):
+        """删除指定地区某一档。"""
+        tiers = self.get_tiers(region)
+        if not tiers or tier_index >= len(tiers):
+            raise IndexError(f"地区 '{region}' 不存在第 {tier_index + 1} 档")
+        del tiers[tier_index]
+        self.save()
+
     def remove_region(self, region):
         """删除一个地区的档位配置。"""
         if region in self._data:

@@ -9,6 +9,8 @@ from lib.history import HistoryManager
 from lib.user_manager import UserManager
 from lib import exporter, importer, anomaly, validator, summary
 from lib.logger import get_logger
+from ui import theme
+from ui.tariff_panel import open_tariff_window
 from ui.input_panel import InputPanel
 from ui.result_panel import ResultPanel
 from ui.record_table import RecordTable
@@ -23,8 +25,12 @@ class MainWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("阶梯电价计算与查询系统")
-        self.root.geometry("980x640")
+        self.root.geometry("1020x660")
         self.root.minsize(880, 560)
+
+        # 应用暗色霓虹科技主题
+        self.style = theme.apply_theme()
+        self.root.configure(background=theme.BG_DEEP)
 
         # 业务对象
         self.tariff_manager = TariffManager()
@@ -33,24 +39,54 @@ class MainWindow:
         self.user_manager = UserManager()
 
         self._build_ui()
+        self._build_menu()
         self._load_records()
+
+    def _build_menu(self):
+        """构建顶部菜单栏：设置 → 档位规则管理。"""
+        menubar = tk.Menu(self.root, bg=theme.BG_ELEV, fg=theme.TEXT_MAIN,
+                          activebackground=theme.BG_PANEL, activeforeground=theme.NEON_CYAN)
+        settings = tk.Menu(menubar, tearoff=0, bg=theme.BG_ELEV, fg=theme.TEXT_MAIN,
+                           activebackground=theme.BG_PANEL, activeforeground=theme.NEON_CYAN)
+        settings.add_command(label="档位规则管理", command=self.open_tariff_manager)
+        settings.add_command(label="退出", command=self.root.quit)
+        menubar.add_cascade(label="设置", menu=settings)
+        self.root.config(menu=menubar)
+
+    def open_tariff_manager(self):
+        """打开档位规则管理窗口，修改后刷新地区下拉。"""
+        open_tariff_window(self.root, self.tariff_manager, on_changed=self._on_tariff_changed)
+
+    def _on_tariff_changed(self, region):
+        """档位配置变更后：刷新地区下拉与计算器，并重新计算默认值。"""
+        regions = self.tariff_manager.get_regions()
+        self.input_panel.set_regions(regions)
+        # 新变更地区作为默认选中，便于立即验证
+        if region in regions:
+            self.input_panel.set_region_by_name(region)
 
     # ── 界面组装 ──
     def _build_ui(self):
+        outer = ttk.Frame(self.root, style="Root.TFrame")
+        outer.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # 顶部科技标题条
+        self._build_header(outer)
+
         # 顶部输入区
         self.input_panel = InputPanel(
-            self.root, self.tariff_manager.get_regions(), self.on_calculate,
+            outer, self.tariff_manager.get_regions(), self.on_calculate,
             default_region="贵州",
             users=self.user_manager.get_users(),
         )
         self.input_panel.pack(fill="x", padx=12, pady=6)
 
         # 结果概览区
-        self.result_panel = ResultPanel(self.root)
+        self.result_panel = ResultPanel(outer)
         self.result_panel.pack(fill="x", padx=12, pady=6)
 
         # 中部：左侧(筛选+表格+异常) + 右侧预留区
-        mid = ttk.Frame(self.root)
+        mid = ttk.Frame(outer)
         mid.pack(fill="both", expand=True, padx=12, pady=6)
 
         left = ttk.Frame(mid)
@@ -62,8 +98,8 @@ class MainWindow:
         # 汇总统计条（当前记录集合的聚合指标）
         self.summary_var = tk.StringVar(value="")
         ttk.Label(
-            left, textvariable=self.summary_var, foreground="#7a5c00",
-            font=("", 9), anchor="w",
+            left, textvariable=self.summary_var, style="Dim.TLabel",
+            font=("Consolas", 9), anchor="w",
         ).pack(fill="x", pady=(0, 4))
 
         self.record_table = RecordTable(left)
@@ -72,7 +108,7 @@ class MainWindow:
         # 异常提示
         self.alert_var = tk.StringVar(value="")
         self.alert_label = ttk.Label(
-            left, textvariable=self.alert_var, foreground="#b00000", anchor="w",
+            left, textvariable=self.alert_var, foreground=theme.DANGER, anchor="w",
             wraplength=620, font=("", 9),
         )
         self.alert_label.pack(fill="x", pady=(4, 0))
@@ -89,23 +125,44 @@ class MainWindow:
 
         # 状态栏
         self.status_var = tk.StringVar(value="就绪")
-        ttk.Label(self.root, textvariable=self.status_var, anchor="w").pack(
+        ttk.Label(outer, textvariable=self.status_var, style="Dim.TLabel",
+                  font=("Consolas", 9), anchor="w").pack(
             fill="x", padx=12, pady=(0, 6)
         )
+
+    def _build_header(self, parent):
+        """构建顶部科技感标题条：系统名 + 霓虹分隔线。"""
+        header = ttk.Frame(parent, style="Root.TFrame")
+        header.pack(fill="x", padx=4, pady=(0, 8))
+
+        ttk.Label(
+            header, text="⚡ 阶梯电价可视化计算与查询系统",
+            style="Root.TLabel", font=("Microsoft YaHei", 15, "bold"),
+            foreground=theme.NEON_CYAN,
+        ).pack(side="left")
+
+        ttk.Label(
+            header, text=" SMART TARIFF ANALYZER ",
+            style="Root.TLabel", font=("Consolas", 9), foreground=theme.TEXT_DIM,
+        ).pack(side="right")
+
+        # 霓虹分隔线
+        sep = ttk.Separator(parent, orient="horizontal")
+        sep.pack(fill="x", pady=(0, 6))
 
     def _build_filter_bar(self, parent):
         """构建筛选栏：按用户 / 月份筛选记录，含筛选与重置按钮。"""
         bar = ttk.Frame(parent)
         bar.pack(fill="x", pady=(0, 4))
 
-        ttk.Label(bar, text="筛选：").pack(side="left")
-        ttk.Label(bar, text="用户").pack(side="left", padx=(4, 0))
+        ttk.Label(bar, text="筛选：", style="Dim.TLabel").pack(side="left")
+        ttk.Label(bar, text="用户", style="Dim.TLabel").pack(side="left", padx=(4, 0))
         self.filter_user = ttk.Combobox(
-            bar, state="readonly", width=8,
+            bar, state="normal", width=10,
         )
         self.filter_user["values"] = self.user_manager.get_users()
         self.filter_user.pack(side="left", padx=4)
-        ttk.Label(bar, text="月份").pack(side="left")
+        ttk.Label(bar, text="月份", style="Dim.TLabel").pack(side="left")
         self.filter_month = ttk.Combobox(
             bar, state="readonly", width=6,
             values=["全部"] + [str(m) for m in range(1, 13)],
@@ -113,8 +170,34 @@ class MainWindow:
         self.filter_month.pack(side="left", padx=4)
         self.filter_month.current(0)
 
+        ttk.Label(bar, text="用电量(度)", style="Dim.TLabel").pack(side="left", padx=(8, 0))
+        self.filter_usage_min = ttk.Entry(bar, width=7)
+        self.filter_usage_min.pack(side="left", padx=2)
+        ttk.Label(bar, text="~", style="Dim.TLabel").pack(side="left")
+        self.filter_usage_max = ttk.Entry(bar, width=7)
+        self.filter_usage_max.pack(side="left", padx=2)
+
         ttk.Button(bar, text="筛选", command=self.apply_filter).pack(side="left", padx=6)
         ttk.Button(bar, text="重置", command=self.reset_filter).pack(side="left")
+
+    def _parse_usage_range(self):
+        """解析用电量区间输入；非法传回(None, None, 错误信息)。"""
+        min_s = self.filter_usage_min.get().strip()
+        max_s = self.filter_usage_max.get().strip()
+        if not min_s and not max_s:
+            return None, None, None
+        try:
+            lo = float(min_s) if min_s else None
+            hi = float(max_s) if max_s else None
+        except ValueError:
+            return None, None, "用电量区间必须是数字"
+        if lo is not None and lo < 0:
+            return None, None, "用电量下限不能为负数"
+        if hi is not None and hi < 0:
+            return None, None, "用电量上限不能为负数"
+        if lo is not None and hi is not None and lo > hi:
+            return None, None, "用电量下限不能大于上限"
+        return lo, hi, None
 
     def apply_filter(self):
         """按筛选条件加载记录，并重新检查异常。"""
@@ -123,7 +206,13 @@ class MainWindow:
         user_sel = user or None
         month_sel = None if month == "全部" else int(month)
 
-        data = self._load_records_data(username=user_sel, month=month_sel)
+        lo, hi, err = self._parse_usage_range()
+        if err:
+            messagebox.showwarning("提示", err)
+            return
+
+        data = self._load_records_data(
+            username=user_sel, month=month_sel, min_usage=lo, max_usage=hi)
         self.record_table.load(data)
         self.more_panel.set_records(data)
         self._update_summary(data)
@@ -134,6 +223,8 @@ class MainWindow:
         """重置筛选并显示全部记录。"""
         self.filter_user.set("")
         self.filter_month.current(0)
+        self.filter_usage_min.delete(0, tk.END)
+        self.filter_usage_max.delete(0, tk.END)
         self.apply_filter()
 
     def _load_records(self):
@@ -147,9 +238,10 @@ class MainWindow:
         """用当前记录集合刷新汇总统计条。"""
         self.summary_var.set(summary.format_summary_text(summary.summarize(records)))
 
-    def _load_records_data(self, username=None, month=None):
-        """返回历史记录（支持按用户/月份筛选，代码表格和图表共用）。"""
-        return self.history.query(username=username, month=month, limit=500)
+    def _load_records_data(self, username=None, month=None, min_usage=None, max_usage=None):
+        """返回历史记录（可按用户/月份/用电量区间筛选）。"""
+        return self.history.query(username=username, month=month,
+                                  min_usage=min_usage, max_usage=max_usage, limit=500)
 
     def _update_alerts(self, records):
         """对记录做异常检测并更新异常提示栏。"""

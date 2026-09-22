@@ -13,11 +13,11 @@ class InputPanel(ttk.LabelFrame):
         self._on_calculate = on_calculate
         self._default_region = default_region
 
-        # 用户名（从预置名单下拉选择，不手输）
+        # 用户名（预置名单 + 可输入搜索过滤）
         ttk.Label(self, text="用户：").grid(row=0, column=0, sticky="w")
         self.username_var = tk.StringVar()
         self.user_combo = ttk.Combobox(
-            self, textvariable=self.username_var, state="readonly", width=8,
+            self, textvariable=self.username_var, state="normal", width=10,
         )
         self.user_combo.grid(row=0, column=1, padx=6)
         self.set_users(users or [])
@@ -45,8 +45,9 @@ class InputPanel(ttk.LabelFrame):
         self.usage_var = tk.StringVar()
         ttk.Entry(self, textvariable=self.usage_var, width=12).grid(row=0, column=7, padx=6)
 
-        # 计算按钮
-        ttk.Button(self, text="计算", command=self._on_calculate).grid(row=0, column=8, padx=10)
+        # 计算按钮（霓虹强调样式）
+        ttk.Button(self, text=" ⚡ 计算 ", style="Neon.TButton",
+                   command=self._on_calculate).grid(row=0, column=8, padx=10)
 
     def get_inputs(self):
         """收集并返回当前输入值（原始字符串，尚未校验）。"""
@@ -62,10 +63,8 @@ class InputPanel(ttk.LabelFrame):
         return self.region_var.get()
 
     def set_users(self, users):
-        """动态设置用户名单下拉选项，默认选第一项。"""
+        """动态设置用户名单下拉选项。可输入模式下默认置空，由用户输入或选择。"""
         self.user_combo["values"] = users
-        if users:
-            self.user_combo.current(0)
 
     def set_regions(self, regions):
         """动态更新地区下拉选项，优先选中默认地区。"""
@@ -79,3 +78,8 @@ class InputPanel(ttk.LabelFrame):
             self.region_var.set(self._default_region)
         else:
             self.region_combo.current(0)
+
+    def set_region_by_name(self, region):
+        """按名称设置地区下拉的当前选中项（不存在则忽略）。"""
+        if region in self.region_combo["values"]:
+            self.region_var.set(region)
