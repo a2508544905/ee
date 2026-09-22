@@ -43,6 +43,30 @@ class TestAnomaly(unittest.TestCase):
         recs = [{"username": "E", "region": "贵州", "month": 1, "usage": 200}]
         self.assertEqual(anomaly.detect(recs), [])
 
+    def test_环比暴跌检测(self):
+        recs = [
+            {"username": "F", "region": "贵州", "month": 1, "usage": 800},
+            {"username": "F", "region": "贵州", "month": 2, "usage": 80},  # 剩 10%
+        ]
+        alerts = anomaly.detect(recs)
+        self.assertTrue(any("骤降" in a["message"] for a in alerts))
+
+    def test_远超历史均值检测(self):
+        recs = [
+            {"username": "G", "region": "贵州", "month": 1, "usage": 100},
+            {"username": "G", "region": "贵州", "month": 2, "usage": 120},  # 均值 110
+            {"username": "G", "region": "贵州", "month": 3, "usage": 2000},  # 超均值 ~18 倍
+        ]
+        alerts = anomaly.detect(recs)
+        self.assertTrue(any("历史均值" in a["message"] for a in alerts))
+
+    def test_阈值可配置(self):
+        # 默认 5000 不报警，调低后报警
+        recs = [{"username": "H", "region": "贵州", "month": 1, "usage": 3000}]
+        self.assertEqual(anomaly.detect(recs), [])
+        alerts = anomaly.detect(recs, excessive=2000)
+        self.assertTrue(any("过高" in a["message"] for a in alerts))
+
 
 if __name__ == "__main__":
     unittest.main()

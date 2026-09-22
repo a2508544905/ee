@@ -1,0 +1,6 @@
+{
+  "excessive_usage_threshold": 5000.0,
+  "surge_factor": 2.0,
+  "plunge_factor": 0.2,
+  "mean_anomaly_factor": 3.0
+}
