@@ -87,7 +87,8 @@ class HistoryManager:
         conn.commit()
         conn.close()
 
-    def query(self, region=None, min_usage=None, max_usage=None, limit=100):
+    def query(self, region=None, min_usage=None, max_usage=None, username=None,
+          month=None, limit=100):
         """按条件查询历史记录。"""
         conn = sqlite3.connect(self.db_path)
         sql = ("SELECT id, created_at, username, month, region, usage, total, "
@@ -97,6 +98,12 @@ class HistoryManager:
         if region:
             sql += " AND region = ?"
             params.append(region)
+        if username is not None:
+            sql += " AND username = ?"
+            params.append(username)
+        if month is not None:
+            sql += " AND month = ?"
+            params.append(month)
         if min_usage is not None:
             sql += " AND usage >= ?"
             params.append(min_usage)

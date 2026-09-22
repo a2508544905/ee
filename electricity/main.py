@@ -50,10 +50,12 @@ import tkinter as tk  # noqa: E402
 # 确保项目根目录在 sys.path 中，以便导入 ui/lib 包
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from lib.logger import setup_logger
 from ui.main_window import MainWindow
 
 
 def main():
+    setup_logger()
     root = tk.Tk()
     MainWindow(root)
     root.mainloop()
