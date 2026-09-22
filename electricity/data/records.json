@@ -1,0 +1,443 @@
+[
+  {
+    "username": "B",
+    "month": 1,
+    "region": "贵州",
+    "usage": 999.0,
+    "total": 455.14
+  },
+  {
+    "username": "A",
+    "month": 1,
+    "region": "贵州",
+    "usage": 120.0,
+    "total": 54.67
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 180.0,
+    "total": 82.01
+  },
+  {
+    "username": "A",
+    "month": 3,
+    "region": "贵州",
+    "usage": 240.0,
+    "total": 109.34
+  },
+  {
+    "username": "B",
+    "month": 1,
+    "region": "贵州",
+    "usage": 300.0,
+    "total": 136.68
+  },
+  {
+    "username": "B",
+    "month": 2,
+    "region": "贵州",
+    "usage": 450.0,
+    "total": 205.02
+  },
+  {
+    "username": "B",
+    "month": 3,
+    "region": "贵州",
+    "usage": 520.0,
+    "total": 236.91
+  },
+  {
+    "username": "B",
+    "month": 4,
+    "region": "贵州",
+    "usage": 600.0,
+    "total": 273.36
+  },
+  {
+    "username": "C",
+    "month": 1,
+    "region": "贵州",
+    "usage": 80.0,
+    "total": 36.45
+  },
+  {
+    "username": "C",
+    "month": 2,
+    "region": "贵州",
+    "usage": 60.0,
+    "total": 27.34
+  },
+  {
+    "username": "C",
+    "month": 3,
+    "region": "贵州",
+    "usage": 90.0,
+    "total": 41.0
+  },
+  {
+    "username": "C",
+    "month": 4,
+    "region": "贵州",
+    "usage": 110.0,
+    "total": 50.12
+  },
+  {
+    "username": "C",
+    "month": 5,
+    "region": "贵州",
+    "usage": 95.0,
+    "total": 43.28
+  },
+  {
+    "username": "C",
+    "month": 6,
+    "region": "贵州",
+    "usage": 130.0,
+    "total": 59.23
+  },
+  {
+    "username": "D",
+    "month": 1,
+    "region": "贵州",
+    "usage": 2000.0,
+    "total": 911.2
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "贵州",
+    "usage": 3200.0,
+    "total": 1467.92
+  },
+  {
+    "username": "D",
+    "month": 3,
+    "region": "贵州",
+    "usage": 5100.0,
+    "total": 2528.56
+  },
+  {
+    "username": "A",
+    "month": 1,
+    "region": "贵州",
+    "usage": 300.0,
+    "total": 136.68
+  },
+  {
+    "username": "B",
+    "month": 2,
+    "region": "贵州",
+    "usage": 1500.0,
+    "total": 683.4
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 1.0,
+    "total": 0.62
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 1.0,
+    "total": 0.62
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 1.0,
+    "total": 0.62
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 1.0,
+    "total": 0.62
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 992.0,
+    "total": 777.04
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "上海",
+    "usage": 992.0,
+    "total": 777.04
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "北京",
+    "usage": 9999.0,
+    "total": 7787.21
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "浙江",
+    "usage": 9999.0,
+    "total": 100.0
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "浙江",
+    "usage": 9999.0,
+    "total": 100.0
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "浙江",
+    "usage": 22.0,
+    "total": 11.0
+  },
+  {
+    "username": "D",
+    "month": 2,
+    "region": "贵州",
+    "usage": 22.0,
+    "total": 10.02
+  },
+  {
+    "username": "666",
+    "month": 3,
+    "region": "贵州",
+    "usage": 99.0,
+    "total": 45.1
+  },
+  {
+    "username": "C",
+    "month": 3,
+    "region": "贵州",
+    "usage": 9898.0,
+    "total": 6153.93
+  },
+  {
+    "username": "C",
+    "month": 3,
+    "region": "贵州",
+    "usage": 9898.0,
+    "total": 6153.93
+  },
+  {
+    "username": "AO",
+    "month": 2,
+    "region": "贵州",
+    "usage": 50.0,
+    "total": 22.78
+  },
+  {
+    "username": "AO",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AP",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AO",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AO",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AQ",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AQ",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "AX",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "C",
+    "month": 2,
+    "region": "贵州",
+    "usage": 66.0,
+    "total": 30.07
+  },
+  {
+    "username": "B",
+    "month": 2,
+    "region": "贵州",
+    "usage": 66.0,
+    "total": 30.07
+  },
+  {
+    "username": "A",
+    "month": 3,
+    "region": "贵州",
+    "usage": 669.0,
+    "total": 304.8
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 66.0,
+    "total": 30.07
+  },
+  {
+    "username": "A",
+    "month": 1,
+    "region": "贵州",
+    "usage": 66.0,
+    "total": 30.07
+  },
+  {
+    "username": "是",
+    "month": 3,
+    "region": "贵州",
+    "usage": 22.0,
+    "total": 10.02
+  },
+  {
+    "username": "222",
+    "month": 6,
+    "region": "上海",
+    "usage": 31.0,
+    "total": 19.22
+  },
+  {
+    "username": "222",
+    "month": 6,
+    "region": "上海",
+    "usage": 31.0,
+    "total": 19.22
+  },
+  {
+    "username": "222",
+    "month": 6,
+    "region": "上海",
+    "usage": 31.0,
+    "total": 19.22
+  },
+  {
+    "username": "222",
+    "month": 6,
+    "region": "上海",
+    "usage": 31.0,
+    "total": 19.22
+  },
+  {
+    "username": "222",
+    "month": 6,
+    "region": "上海",
+    "usage": 31.0,
+    "total": 19.22
+  },
+  {
+    "username": "啊啊啊",
+    "month": 5,
+    "region": "贵州",
+    "usage": 22.0,
+    "total": 10.02
+  },
+  {
+    "username": "33",
+    "month": 5,
+    "region": "贵州",
+    "usage": 22.0,
+    "total": 10.02
+  },
+  {
+    "username": "33",
+    "month": 5,
+    "region": "贵州",
+    "usage": 22.0,
+    "total": 10.02
+  },
+  {
+    "username": "6",
+    "month": 2,
+    "region": "上海",
+    "usage": 66.0,
+    "total": 40.92
+  },
+  {
+    "username": "6",
+    "month": 2,
+    "region": "北京",
+    "usage": 66.0,
+    "total": 32.34
+  },
+  {
+    "username": "6",
+    "month": 2,
+    "region": "贵州",
+    "usage": 66.0,
+    "total": 30.07
+  },
+  {
+    "username": "22",
+    "month": 3,
+    "region": "默认",
+    "usage": 41414.0,
+    "total": 28949.8
+  },
+  {
+    "username": "22",
+    "month": 3,
+    "region": "北京",
+    "usage": 133.0,
+    "total": 65.17
+  },
+  {
+    "username": "22",
+    "month": 3,
+    "region": "北京",
+    "usage": 133.0,
+    "total": 65.17
+  },
+  {
+    "username": "22",
+    "month": 3,
+    "region": "北京",
+    "usage": 100.0,
+    "total": 49.0
+  },
+  {
+    "username": "阿",
+    "month": 3,
+    "region": "北京",
+    "usage": 100.0,
+    "total": 49.0
+  }
+]

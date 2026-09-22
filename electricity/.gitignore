@@ -12,7 +12,9 @@ venv/
 *.db
 
 # 运行时数据（日志、本地数据库等）
-data/
+data/*
+!data/sample.csv
+!data/records.json
 app.log
 
 # IDE

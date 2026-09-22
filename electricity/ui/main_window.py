@@ -7,7 +7,8 @@ from lib.calculator import Calculator
 from lib.tariff_manager import TariffManager
 from lib.history import HistoryManager
 from lib.user_manager import UserManager
-from lib import exporter, importer, anomaly, validator, summary
+from lib.data_loader import DataLoader
+from lib import exporter, anomaly, report_exporter, summary
 from lib.logger import get_logger
 from ui import theme
 from ui.tariff_panel import open_tariff_window
@@ -37,6 +38,8 @@ class MainWindow:
         self.calculator = Calculator(self.tariff_manager)
         self.history = HistoryManager()
         self.user_manager = UserManager()
+        self.data_loader = DataLoader(self.calculator)  # CSV导入 + JSON持久化
+        self._persist_to_json()  # 启动时把 SQLite 记录同步写入 records.json
 
         self._build_ui()
         self._build_menu()
@@ -249,6 +252,20 @@ class MainWindow:
         return self.history.query(username=username, month=month,
                                   min_usage=min_usage, max_usage=max_usage, limit=500)
 
+    def _persist_to_json(self):
+        """把当前全部 SQLite 记录同步写入 data/records.json（JSON 持久化）。"""
+        try:
+            records = self.history.query(limit=5000)
+            json_records = [
+                {"username": r.get("username") or "", "month": r.get("month"),
+                 "region": r.get("region") or "", "usage": r.get("usage") or 0,
+                 "total": r.get("total") or 0}
+                for r in records
+            ]
+            self.data_loader.save_records(json_records)
+        except Exception as exc:
+            logger.warning("JSON持久化失败: %s", exc)
+
     def _update_alerts(self, records):
         """对记录做异常检测并更新异常提示栏。"""
         from lib import anomaly
@@ -311,6 +328,7 @@ class MainWindow:
             region, usage, result["total"], result["tiers"],
             result["current_tier"], username=username or None, month=month,
         )
+        self._persist_to_json()  # 录入后同步到 JSON 持久化
 
         # 刷新表格（追加最新一条在顶部）
         latest = {
@@ -354,26 +372,28 @@ class MainWindow:
         if not path:
             return
         try:
-            records = importer.read_records(path, default_region=self.input_panel.get_region())
+            csv_records = self.data_loader.load_csv(
+                path, default_region=self.input_panel.get_region())
         except (OSError, ValueError) as exc:
             logger.error("CSV导入失败: %s", exc)
             messagebox.showerror("导入失败", str(exc))
             return
 
         ok_count = 0
-        for rec in records:
+        for rec in csv_records:
             try:
-                result = self.calculator.calculate(rec["region"], rec["usage"])
-            except Exception as exc:  # 单行计算失败不中断整体
-                self.status_var.set(f"导入：出行计算失败 {exc}")
+                self.history.save(
+                    rec["region"], rec["usage"], rec["total"], rec["tiers"],
+                    rec["current_tier"], username=rec["username"], month=rec["month"],
+                )
+            except Exception as exc:  # 单行入库失败不中断整体
+                self.status_var.set(f"导入：单行入库失败 {exc}")
                 continue
-            self.history.save(
-                rec["region"], rec["usage"], result["total"], result["tiers"],
-                result["current_tier"], username=rec["username"], month=rec["month"],
-            )
             ok_count += 1
 
-        msg = f"导入完成：成功 {ok_count} 条，跳过 {len(records) - ok_count} 条"
+        self._persist_to_json()  # 导入后同步到 JSON 持久化
+
+        msg = f"导入完成：成功 {ok_count} 条，跳过 {len(csv_records) - ok_count} 条"
         logger.info("CSV导入: %s", msg)
         self.status_var.set(msg)
         self.more_panel.set_import_state(msg)
@@ -395,7 +415,7 @@ class MainWindow:
         if not path:
             return
         try:
-            count = exporter.export(records, path)
+            count = report_exporter.export(records, path)
         except (ValueError, OSError, RuntimeError) as exc:
             logger.error("导出失败: %s", exc)
             messagebox.showerror("导出失败", str(exc))
