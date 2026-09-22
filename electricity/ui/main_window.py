@@ -8,7 +8,7 @@ from lib.tariff_manager import TariffManager
 from lib.history import HistoryManager
 from lib.user_manager import UserManager
 from lib.data_loader import DataLoader
-from lib import exporter, anomaly, report_exporter, summary
+from lib import exporter, anomaly, report_exporter, summary, validator
 from lib.logger import get_logger
 from ui import theme
 from ui.tariff_panel import open_tariff_window
