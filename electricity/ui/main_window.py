@@ -7,7 +7,7 @@ from lib.calculator import Calculator
 from lib.tariff_manager import TariffManager
 from lib.history import HistoryManager
 from lib.user_manager import UserManager
-from lib import exporter, importer, anomaly, validator
+from lib import exporter, importer, anomaly, validator, summary
 from lib.logger import get_logger
 from ui.input_panel import InputPanel
 from ui.result_panel import ResultPanel
@@ -58,6 +58,13 @@ class MainWindow:
 
         # 筛选栏
         self._build_filter_bar(left)
+
+        # 汇总统计条（当前记录集合的聚合指标）
+        self.summary_var = tk.StringVar(value="")
+        ttk.Label(
+            left, textvariable=self.summary_var, foreground="#7a5c00",
+            font=("", 9), anchor="w",
+        ).pack(fill="x", pady=(0, 4))
 
         self.record_table = RecordTable(left)
         self.record_table.pack(fill="both", expand=True)
@@ -119,6 +126,7 @@ class MainWindow:
         data = self._load_records_data(username=user_sel, month=month_sel)
         self.record_table.load(data)
         self.more_panel.set_records(data)
+        self._update_summary(data)
         self._update_alerts(data)
         self.status_var.set(f"筛选共 {len(data)} 条")
 
@@ -130,8 +138,14 @@ class MainWindow:
 
     def _load_records(self):
         """启动时加载全部历史记录到表格。"""
-        self.record_table.load(self._load_records_data())
-        self._update_alerts(self._load_records_data())
+        data = self._load_records_data()
+        self.record_table.load(data)
+        self._update_summary(data)
+        self._update_alerts(data)
+
+    def _update_summary(self, records):
+        """用当前记录集合刷新汇总统计条。"""
+        self.summary_var.set(summary.format_summary_text(summary.summarize(records)))
 
     def _load_records_data(self, username=None, month=None):
         """返回历史记录（支持按用户/月份筛选，代码表格和图表共用）。"""
@@ -195,10 +209,12 @@ class MainWindow:
         }
         self.record_table.prepend(latest)
 
-        # 同步最新记录到图表区，并更新当前地区与异常提示
-        self.more_panel.set_records(self._load_records_data())
+        # 同步最新记录到图表区，并更新当前地区、汇总与异常提示
+        data = self._load_records_data()
+        self.more_panel.set_records(data)
         self.more_panel.set_region(region)
-        self._update_alerts(self._load_records_data())
+        self._update_summary(data)
+        self._update_alerts(data)
 
         # 状态更新
         dist = result["distance_to_next"]
@@ -278,6 +294,7 @@ class MainWindow:
         data = self._load_records_data()
         self.record_table.load(data)
         self.more_panel.set_records(data)
+        self._update_summary(data)
         self._update_alerts(data)
 
     @staticmethod
