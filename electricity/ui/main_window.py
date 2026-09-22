@@ -159,6 +159,7 @@ class MainWindow:
 
         region = inputs["region"]
         usage = float(inputs["usage_text"])
+        username = inputs.get("username", "")
 
         # 计算
         result = self.calculator.calculate(region, usage)
