@@ -11,6 +11,10 @@ venv/
 # 数据库
 *.db
 
+# 运行时数据（日志、本地数据库等）
+data/
+app.log
+
 # IDE
 .idea/
 .vscode/

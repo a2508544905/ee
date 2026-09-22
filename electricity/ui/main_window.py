@@ -7,7 +7,7 @@ from lib.calculator import Calculator
 from lib.tariff_manager import TariffManager
 from lib.history import HistoryManager
 from lib.user_manager import UserManager
-from lib import exporter, importer, anomaly
+from lib import exporter, importer, anomaly, validator
 from lib.logger import get_logger
 from ui.input_panel import InputPanel
 from ui.result_panel import ResultPanel
@@ -152,14 +152,23 @@ class MainWindow:
     def on_calculate(self):
         """点击「计算」：校验 → 计算 → 显示 → 存库 → 刷表格。"""
         inputs = self.input_panel.get_inputs()
-        errors = self._validate(inputs)
-        if errors:
-            messagebox.showwarning("提示", errors)
+
+        # 统一校验（含用电量/月份/地区等边界），非法则提示并中止
+        try:
+            cleaned = validator.validate_record(
+                inputs.get("username", ""),
+                inputs.get("month", ""),
+                inputs["region"],
+                inputs["usage_text"],
+            )
+        except ValueError as exc:
+            messagebox.showwarning("提示", str(exc))
             return
 
-        region = inputs["region"]
-        usage = float(inputs["usage_text"])
-        username = inputs.get("username", "")
+        region = cleaned["region"]
+        usage = cleaned["usage"]
+        username = cleaned["username"]
+        month = cleaned["month"]
 
         # 计算
         result = self.calculator.calculate(region, usage)
@@ -170,11 +179,9 @@ class MainWindow:
         self.result_panel.show_result(result)
 
         # 存库（用户名纯标签；月份可为空）
-        username = inputs["username"] or None
-        month = int(inputs["month"]) if inputs["month"] else None
         self.history.save(
             region, usage, result["total"], result["tiers"],
-            result["current_tier"], username=username, month=month,
+            result["current_tier"], username=username or None, month=month,
         )
 
         # 刷新表格（追加最新一条在顶部）
@@ -272,21 +279,6 @@ class MainWindow:
         self.record_table.load(data)
         self.more_panel.set_records(data)
         self._update_alerts(data)
-
-    @staticmethod
-    def _validate(inputs):
-        """输入校验，返回错误信息；无错返回空字符串。"""
-        if not inputs["region"]:
-            return "请选择地区"
-        if not inputs["usage_text"]:
-            return "请输入用电量"
-        try:
-            usage = float(inputs["usage_text"])
-            if usage < 0:
-                raise ValueError
-        except ValueError:
-            return "用电量必须是 ≥0 的有效数字"
-        return ""
 
     @staticmethod
     def _now_str():
