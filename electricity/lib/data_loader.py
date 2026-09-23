@@ -19,6 +19,12 @@ import os
 # JSON 持久化文件路径
 DEFAULT_RECORDS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "records.json")
 
+# 批量导入尝试的编码顺序：UTF-8-sig（兼容 BOM）→ GBK（国内常见）→ UTF-8
+_DETECT_ENCODINGS = ("utf-8-sig", "gbk", "utf-8")
+
+# 单月用电量硬上限（度）：与 validator.MAX_USAGE 保持一致，超限视为录入错误
+MAX_USAGE = 100000.0
+
 # CSV 列名映射，兼容中英文表头
 _COLUMN_MAP = {
     "username": "username", "用户": "username", "用户名": "username",
@@ -34,12 +40,14 @@ def _normalize_header(header):
 
 
 def _parse_usage(value):
-    """解析用电量，非法或为负返回 None。"""
+    """解析用电量，非法、为负或超出上限返回 None。"""
     if not value:
         return None
     try:
         v = float(value)
-        return v if v >= 0 else None
+        if v < 0 or v > MAX_USAGE:
+            return None
+        return v
     except (TypeError, ValueError):
         return None
 
@@ -53,6 +61,32 @@ def _parse_month(value):
         return m if 1 <= m <= 12 else None
     except (TypeError, ValueError):
         return None
+
+
+def _read_text(path):
+    """以自动检测的编码读取整个文件文本。
+
+    依次尝试 UTF-8-sig / GBK / UTF-8，全部失败时抛出带中文提示的异常。
+
+    Args:
+        path: CSV 文件路径。
+
+    Returns:
+        str: 文件文本内容。
+
+    Raises:
+        ValueError: 文件不存在或无法用已知编码解码时。
+    """
+    if not os.path.isfile(path):
+        raise ValueError(f"文件不存在：{path}")
+    last_exc = None
+    for encoding in _DETECT_ENCODINGS:
+        try:
+            with open(path, "r", encoding=encoding, newline="") as f:
+                return f.read()
+        except UnicodeDecodeError as exc:
+            last_exc = exc
+    raise ValueError(f"无法识别文件编码，请使用 UTF-8 或 GBK 编码：{path}（{last_exc}）")
 
 
 class DataLoader:
@@ -75,8 +109,9 @@ class DataLoader:
         Raises:
             ValueError: 文件为空、无有效行、或没有任何可用数据时。
         """
-        with open(path, "r", encoding="utf-8-sig", newline="") as f:
-            raw_rows = [row for row in csv.reader(f) if any(cell.strip() for cell in row)]
+        import io
+        text = _read_text(path)
+        raw_rows = [row for row in csv.reader(io.StringIO(text)) if any(cell.strip() for cell in row)]
 
         if not raw_rows:
             raise ValueError("文件为空或有内容但无有效行")
@@ -91,22 +126,49 @@ class DataLoader:
         data_rows = raw_rows[1:] if has_header else raw_rows
 
         records = []
+        errors = []          # 记录被跳过的行及原因
+        duplicates = []      # 记录重复（同用户同月份）的行
+        seen_keys = set()    # 已出现过的 (username, month)
+
         for row in data_rows:
             parsed = {}
             for col, cell in zip(header, row):
                 parsed[col] = cell.strip()
-            usage = _parse_usage(parsed.get("usage") or parsed.get("用电量"))
+
+            raw_usage = parsed.get("usage") or parsed.get("用电量")
+            usage = _parse_usage(raw_usage)
             if usage is None:
+                errors.append(f"第{len(errors) + len(records) + len(duplicates) + 2}行：用电量无效（{raw_usage or '空'}）")
                 continue
+
             region = parsed.get("region") or default_region
             if not region:
+                errors.append("地区缺失，已跳过")
                 continue
-            records.append(self._build_record(
-                parsed.get("username") or "",
-                _parse_month(parsed.get("month")),
-                region,
-                usage,
-            ))
+
+            raw_month = parsed.get("month")
+            month = _parse_month(raw_month)
+            if month is None:
+                errors.append(f"月份无效（{raw_month or '空'}），已跳过")
+                continue
+
+            username = parsed.get("username") or ""
+            if (username, month) in seen_keys:
+                duplicates.append(f"{username or '(空)'} 第{month}月")
+                continue
+            seen_keys.add((username, month))
+
+            try:
+                records.append(self._build_record(username, month, region, usage))
+            except ValueError as exc:
+                errors.append(f"{username}：{exc}")
+
+        self.last_report = {
+            "loaded": len(records),
+            "skipped": len(errors),
+            "errors": errors,
+            "duplicates": duplicates,
+        }
 
         if not records:
             raise ValueError("未解析到任何有效用电记录（需包含用电量列）")

@@ -4,6 +4,7 @@ import sqlite3
 import json
 import os
 from datetime import datetime
+from typing import Any, Optional
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "history.db")
 
@@ -11,12 +12,12 @@ DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "history
 class HistoryManager:
     """管理历史计算记录的存储与查询。"""
 
-    def __init__(self, db_path=None):
+    def __init__(self, db_path: Optional[str] = None) -> None:
         self.db_path = db_path or os.path.normpath(DEFAULT_DB_PATH)
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """初始化数据库表结构（含旧库迁移）。"""
         need_columns = ["username", "month"]
         existing_columns = self._get_columns()
@@ -44,7 +45,7 @@ class HistoryManager:
             conn.commit()
             conn.close()
 
-    def _get_columns(self):
+    def _get_columns(self) -> list[str]:
         """返回 history 表的全部列名；表不存在时返回空列表。"""
         conn = sqlite3.connect(self.db_path)
         try:
@@ -54,14 +55,16 @@ class HistoryManager:
         conn.close()
         return [r[1] for r in rows]
 
-    def _alter_add_column(self, col, ddl="TEXT"):
+    def _alter_add_column(self, col: str, ddl: str = "TEXT") -> None:
         """给 history 表追加一列。"""
         conn = sqlite3.connect(self.db_path)
         conn.execute(f"ALTER TABLE history ADD COLUMN {col} {ddl}")
         conn.commit()
         conn.close()
 
-    def save(self, region, usage, total, tiers, current_tier, username=None, month=None):
+    def save(self, region: str, usage: float, total: float, tiers: list[dict[str, Any]],
+             current_tier: Optional[int], username: Optional[str] = None,
+             month: Optional[int] = None) -> None:
         """保存一条计算记录。
 
         Args:
@@ -87,8 +90,9 @@ class HistoryManager:
         conn.commit()
         conn.close()
 
-    def query(self, region=None, min_usage=None, max_usage=None, username=None,
-          month=None, limit=100):
+    def query(self, region: Optional[str] = None, min_usage: Optional[float] = None,
+              max_usage: Optional[float] = None, username: Optional[str] = None,
+              month: Optional[int] = None, limit: int = 100) -> list[dict[str, Any]]:
         """按条件查询历史记录。"""
         conn = sqlite3.connect(self.db_path)
         sql = ("SELECT id, created_at, username, month, region, usage, total, "

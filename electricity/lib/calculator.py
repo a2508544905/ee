@@ -1,18 +1,20 @@
 """阶梯电费计算器 — 封装计算逻辑，对接档位配置"""
 
-import json
-import os
+from typing import TYPE_CHECKING, Any
 
 from lib.electricity import calculate_tiered_bill, get_current_tier, get_distance_to_next_tier
+
+if TYPE_CHECKING:
+    from lib.tariff_manager import TariffManager
 
 
 class Calculator:
     """电费计算器，绑定一个地区的档位规则后即可反复调用。"""
 
-    def __init__(self, tariff_manager):
+    def __init__(self, tariff_manager: "TariffManager") -> None:
         self.tariff_manager = tariff_manager
 
-    def calculate(self, region, usage):
+    def calculate(self, region: str, usage: float) -> dict[str, Any]:
         """计算指定地区、指定用电量的电费。
 
         Returns:

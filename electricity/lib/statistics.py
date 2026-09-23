@@ -6,8 +6,12 @@
   - 返回数据（字典或列表），不在函数内部 print
 """
 
+from typing import Any, Union
 
-def calculate_total_fee(records):
+Record = dict[str, Any]
+
+
+def calculate_total_fee(records: list[Record]) -> float:
     """计算所有记录的总电费（元）。
 
     Returns:
@@ -16,7 +20,7 @@ def calculate_total_fee(records):
     return sum(r.get("total") or 0 for r in records)
 
 
-def calculate_avg_fee(records):
+def calculate_avg_fee(records: list[Record]) -> float:
     """计算所有记录的平均电费（元/条）。
 
     Returns:
@@ -26,7 +30,7 @@ def calculate_avg_fee(records):
     return total / len(records) if records else 0.0
 
 
-def get_usage_ranking(records, top=10):
+def get_usage_ranking(records: list[Record], top: int = 10) -> list[dict[str, Union[str, float]]]:
     """按用电量从高到低排行（默认 Top 10）。
 
     Returns:
@@ -37,7 +41,7 @@ def get_usage_ranking(records, top=10):
             for r in ranked[:top]]
 
 
-def group_by_user(records):
+def group_by_user(records: list[Record]) -> list[dict[str, Union[str, float, int]]]:
     """按用户汇总（每个用户的总用电量、总电费、平均月电费）。
 
     Returns:
@@ -63,7 +67,7 @@ def group_by_user(records):
     return result
 
 
-def group_by_month(records):
+def group_by_month(records: list[Record]) -> list[dict[str, Union[int, float]]]:
     """按月度汇总（每个月的总用电量、总电费）。
 
     Returns:
@@ -85,7 +89,7 @@ def group_by_month(records):
     return result
 
 
-def calculate_tier_ratio(records):
+def calculate_tier_ratio(records: list[Record]) -> list[dict[str, Union[int, float, None]]]:
     """计算各档位用电量的占比分布。
 
     Returns:

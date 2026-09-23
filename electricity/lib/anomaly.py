@@ -52,31 +52,13 @@ def detect(records, excessive=None, surge=None, plunge=None, mean_factor=None):
         list[dict]: 每条含 level("warn"/"error")、message、record。
     """
     thresholds = _load_thresholds()
-    excessive = excessive if excessive is not None else thresholds["excessive_usage_threshold"]
-    surge = surge if surge is not None else thresholds["surge_factor"]
-    plunge = plunge if plunge is not None else thresholds["plunge_factor"]
-    mean_factor = mean_factor if mean_factor is not None else thresholds["mean_anomaly_factor"]
-
-    try:
-        excessive = float(excessive)
-        surge = float(surge)
-        plunge = float(plunge)
-        mean_factor = float(mean_factor)
-    except (TypeError, ValueError):
+    params = _resolve_thresholds(thresholds, excessive, surge, plunge, mean_factor)
+    if params is None:
         return []
 
     alerts = []
-    prev_map = {}   # (username, region) -> {month, usage}，用于环比与均值
-    mean_map = {}   # (username, region) -> [usage...]，用于算历史均值
-
-    # 第一遍：收集每个用户的历史用量，便于算均值
-    for rec in records:
-        usage = rec.get("usage") or 0
-        username = rec.get("username") or ""
-        region = rec.get("region") or ""
-        key = (username, region)
-        if usage >= 0:
-            mean_map.setdefault(key, []).append(usage)
+    mean_map = _collect_usage_history(records)
+    prev_map = {}   # (username, region) -> {month, usage}，用于环比
 
     for rec in records:
         usage = rec.get("usage") or 0
@@ -84,46 +66,112 @@ def detect(records, excessive=None, surge=None, plunge=None, mean_factor=None):
         region = rec.get("region") or ""
         month = rec.get("month") or None
         key = (username, region)
+        prev = prev_map.get(key)
 
         # 1. 负值（异常）
         if usage < 0:
-            alerts.append(_make("error", f"用户 {username or '(匿名)'} 用电量为负值 "
-                                          f"({usage} 度)，数据异常", rec))
+            alerts.append(_make("error",
+                                f"用户 {username or '(匿名)'} 用电量为负值 ({usage} 度)，数据异常",
+                                rec))
             continue
 
         # 2. 过高用电（绝对阈值）
-        if usage > excessive:
+        if usage > params["excessive"]:
             alerts.append(_make("warn", f"用户 {username or '(匿名)'} 用电量过高 "
-                                        f"({usage:.0f} 度，超过 {excessive:.0f} 度)", rec))
+                                        f"({usage:.0f} 度，超过 {params['excessive']:.0f} 度)", rec))
 
-        # 3. 环比暴涨 / 暴跌（同用户同地区，月份递增）
-        prev = prev_map.get(key)
-        if prev and prev["month"] and month and prev["month"] < month:
-            if prev["usage"] > 0 and usage > prev["usage"] * surge:
-                alerts.append(_make("warn", f"用户 {username or '(匿名)'} 用电量环比暴涨 "
-                                            f"(上月 {prev['usage']:.0f} 度 → 本月 "
-                                            f"{usage:.0f} 度)", rec))
-            elif prev["usage"] > 0 and usage < prev["usage"] * plunge:
-                alerts.append(_make("warn", f"用户 {username or '(匿名)'} 用电量环比骤降 "
-                                            f"(上月 {prev['usage']:.0f} 度 → 本月 "
-                                            f"{usage:.0f} 度)", rec))
+        # 3. 环比暴涨 / 暴跌
+        if _is_cyclical(prev, month):
+            alert = _check_cycle(prev, usage, username, rec, params)
+            if alert:
+                alerts.append(alert)
 
         # 4. 远超该用户历史均值（排除当前条，避免自比）
-        his_usages = [u for u in mean_map.get(key, [])]
-        other = sum(his_usages) - usage
-        count = len(his_usages) - 1
-        if count >= 1:
-            avg = other / count
-            if avg > 0 and usage > avg * mean_factor:
-                alerts.append(_make("warn", f"用户 {username or '(匿名)'} 用电量远超历史均值 "
-                                            f"(历史平均 {avg:.0f} 度，本月 {usage:.0f} 度，"
-                                            f"超 {mean_factor:.0f} 倍)", rec))
+        mean_alert = _check_mean_anomaly(mean_map, key, usage, username, rec, params)
+        if mean_alert:
+            alerts.append(mean_alert)
 
-        # 更新最近一条
+        # 更新最近一条用于下次环比
         if prev is None or (month is not None and (prev.get("month") or 0) <= month):
             prev_map[key] = {"month": month, "usage": usage}
 
     return alerts
+
+
+def _resolve_thresholds(thresholds, excessive, surge, plunge, mean_factor):
+    """解析最终阈值；任一参数非法（非数字）时返回 None 表示跳过检测。
+
+    Args:
+        thresholds: 配置缺省阈值字典。
+        excessive/surge/plunge/mean_factor: 调用方传入的可覆盖值（可为 None）。
+
+    Returns:
+        dict | None: 解析后的阈值字典；任一值无法转数字时返回 None。
+    """
+    params = {
+        "excessive": excessive if excessive is not None else thresholds["excessive_usage_threshold"],
+        "surge": surge if surge is not None else thresholds["surge_factor"],
+        "plunge": plunge if plunge is not None else thresholds["plunge_factor"],
+        "mean_factor": mean_factor if mean_factor is not None else thresholds["mean_anomaly_factor"],
+    }
+    try:
+        for key in params:
+            params[key] = float(params[key])
+    except (TypeError, ValueError):
+        return None
+    return params
+
+
+def _collect_usage_history(records):
+    """收集每个用户（用户名+地区）的正用量历史列表，用于计算均值。
+
+    Args:
+        records: 记录列表。
+
+    Returns:
+        dict: key=(username, region)，value=非负用量列表。
+    """
+    mean_map = {}
+    for rec in records:
+        usage = rec.get("usage") or 0
+        if usage >= 0:
+            key = (rec.get("username") or "", rec.get("region") or "")
+            mean_map.setdefault(key, []).append(usage)
+    return mean_map
+
+
+def _is_cyclical(prev, month):
+    """判断当前记录是否可与上条做环比：上月存在且月份递增。"""
+    return bool(prev and prev.get("month") and month and prev["month"] < month)
+
+
+def _check_cycle(prev, usage, username, rec, params):
+    """检测环比暴涨/暴跌，命中时返回一条告警，否则返回 None。"""
+    prev_usage = prev["usage"]
+    if prev_usage <= 0:
+        return None
+    if usage > prev_usage * params["surge"]:
+        return _make("warn", f"用户 {username or '(匿名)'} 用电量环比暴涨 "
+                             f"(上月 {prev_usage:.0f} 度 → 本月 {usage:.0f} 度)", rec)
+    if usage < prev_usage * params["plunge"]:
+        return _make("warn", f"用户 {username or '(匿名)'} 用电量环比骤降 "
+                             f"(上月 {prev_usage:.0f} 度 → 本月 {usage:.0f} 度)", rec)
+    return None
+
+
+def _check_mean_anomaly(mean_map, key, usage, username, rec, params):
+    """检测单月用量是否远超该用户历史均值（排除当前条），命中返回告警。"""
+    his_usages = mean_map.get(key, [])
+    other_sum = sum(his_usages) - usage
+    other_count = len(his_usages) - 1
+    if other_count < 1:
+        return None
+    avg = other_sum / other_count
+    if avg > 0 and usage > avg * params["mean_factor"]:
+        return _make("warn", f"用户 {username or '(匿名)'} 用电量远超历史均值 "
+                             f"(历史平均 {avg:.0f} 度，本月 {usage:.0f} 度，"
+                             f"超 {params['mean_factor']:.0f} 倍)", rec)
+    return None
 
 
 def _make(level, message, record):

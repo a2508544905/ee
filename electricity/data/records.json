@@ -1,5 +1,54 @@
 [
   {
+    "username": "大碗大碗的",
+    "month": 2,
+    "region": "贵州",
+    "usage": 2222.0,
+    "total": 1012.34
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 32.0,
+    "total": 14.58
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 32.0,
+    "total": 14.58
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 32.0,
+    "total": 14.58
+  },
+  {
+    "username": "A",
+    "month": 2,
+    "region": "贵州",
+    "usage": 32.0,
+    "total": 14.58
+  },
+  {
+    "username": "A",
+    "month": 3,
+    "region": "贵州",
+    "usage": 213.0,
+    "total": 97.04
+  },
+  {
+    "username": "B",
+    "month": 1,
+    "region": "贵州",
+    "usage": 999.0,
+    "total": 455.14
+  },
+  {
     "username": "B",
     "month": 1,
     "region": "贵州",

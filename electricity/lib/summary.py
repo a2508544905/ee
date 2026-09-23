@@ -1,7 +1,11 @@
 """记录汇总统计 — 对历史记录做聚合计算，供界面与导出使用"""
 
+from typing import Any, Union
 
-def summarize(records):
+Record = dict[str, Any]
+
+
+def summarize(records: list[Record]) -> dict[str, Union[int, float]]:
     """汇总一条记录列表，返回统计指标。
 
     Args:
@@ -33,7 +37,7 @@ def summarize(records):
     }
 
 
-def format_summary_text(summary):
+def format_summary_text(summary: dict[str, Union[int, float]]) -> str:
     """把汇总结果格式化为单行中文提示文本。"""
     return (
         f"共 {summary['count']} 条记录 | 总用电 {summary['total_usage']:.1f} 度 "

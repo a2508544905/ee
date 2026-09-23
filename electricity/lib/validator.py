@@ -1,12 +1,13 @@
 """输入校验与错误处理 — 统一校验一次录入的全部字段"""
 
 import math
+from typing import Any, Optional, Union
 
 # 单月用电量硬上限（度）：超过视为明显录入错误，直接拒绝
 MAX_USAGE = 100000.0
 
 
-def parse_usage(value_text):
+def parse_usage(value_text: Union[str, int, float]) -> float:
     """解析并校验用电量输入。
 
     Args:
@@ -33,7 +34,7 @@ def parse_usage(value_text):
     return usage
 
 
-def parse_month(value_text):
+def parse_month(value_text: Optional[Union[str, int]]) -> Optional[int]:
     """解析并校验月份。
 
     Args:
@@ -56,7 +57,8 @@ def parse_month(value_text):
     return month
 
 
-def validate_record(text_username, text_month, region, text_usage):
+def validate_record(text_username: Union[str, Any], text_month: Union[str, Any],
+                    region: Optional[str], text_usage: Union[str, int, float]) -> dict[str, Any]:
     """统一校验一次录入的全部字段，返回清洗后的记录数据。
 
     Args:

@@ -393,10 +393,24 @@ class MainWindow:
 
         self._persist_to_json()  # 导入后同步到 JSON 持久化
 
-        msg = f"导入完成：成功 {ok_count} 条，跳过 {len(csv_records) - ok_count} 条"
-        logger.info("CSV导入: %s", msg)
-        self.status_var.set(msg)
-        self.more_panel.set_import_state(msg)
+        # 拼装导入汇总（含被跳过行的原因明细）
+        report = getattr(self.data_loader, "last_report", None) or {}
+        msg_lines = [f"导入完成：成功 {ok_count} 条"]
+        skipped = report.get("skipped", 0)
+        if skipped:
+            msg_lines.append(f"跳过 {skipped} 条（无效数据）")
+        report_errors = report.get("errors") or []
+        detail = "\n".join(f"  · {e}" for e in report_errors[:10])
+        if report_errors:
+            msg_lines.append("被跳过原因：")
+            msg_lines.append(detail)
+        if report.get("duplicates"):
+            msg_lines.append(f"重复记录：{len(report['duplicates'])} 组已去重")
+        msg = "\n".join(msg_lines)
+
+        logger.info("CSV导入: %s", msg.replace("\n", " | "))
+        self.status_var.set(f"导入完成：成功 {ok_count} 条，跳过 {skipped} 条")
+        self.more_panel.set_import_state(f"导入完成：成功 {ok_count} 条，跳过 {skipped} 条")
         self._refresh_after_change()
         messagebox.showinfo("导入完成", msg)
 
