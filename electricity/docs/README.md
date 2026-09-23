@@ -14,11 +14,15 @@ electricity/
 ├── lib/                     # 核心业务逻辑（不依赖界面）
 │   ├── electricity.py       #   阶梯电费计算核心算法
 │   ├── calculator.py        #   计算器（封装计算逻辑 + 档位配置）
+│   ├── chart_generator.py   #   图表逻辑（趋势/阶梯/用户对比）
 │   ├── tariff_manager.py    #   档位标准管理（增删改查）
 │   ├── history.py           #   历史记录存储与筛选查询（SQLite）
 │   ├── user_manager.py      #   用户名单管理
-│   ├── importer.py          #   CSV 批量导入
-│   ├── exporter.py          #   导出 CSV / Excel
+│   ├── data_loader.py       #   CSV 导入、单条录入、JSON 持久化
+│   ├── report_exporter.py   #   报表导出（CSV / 多 Sheet Excel）
+│   ├── summary.py           #   记录汇总统计
+│   ├── statistics.py        #   多维度统计
+│   ├── validator.py         #   输入校验（业务层）
 │   ├── anomaly.py           #   异常用电检测（负值/过高/环比暴涨）
 │   └── logger.py            #   日志系统（文件 + 控制台）
 ├── ui/                      #   tkinter 界面层
@@ -34,11 +38,17 @@ electricity/
 │   ├── test_fee_calculator.py
 │   ├── test_tariff_manager.py
 │   ├── test_history.py
-│   ├── test_importer.py
-│   ├── test_exporter.py
+│   ├── test_data_loader.py
+│   ├── test_statistics.py
+│   ├── test_summary.py
+│   ├── test_validator.py
+│   ├── test_check_rules.py
 │   └── test_anomaly.py
+├── check_rules/             # AST 静态语法规则（check.py 使用）
+│   └── ast_rules.py         #   S001 eval/exec、S002 print、S003 config import
 ├── docs/                    # 文档
 ├── main.py                  # 程序入口（tkinter 主窗口）
+├── check.py                 # 静态检查命令（python check.py）
 ├── requirements.txt         # 依赖清单
 └── .gitignore
 ```
