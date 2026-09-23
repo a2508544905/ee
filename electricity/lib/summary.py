@@ -19,6 +19,8 @@ def summarize(records: list[Record]) -> dict[str, Union[int, float]]:
             "avg_fee": 平均单次电费(元),
             "user_count": 涉及用户数,
             "month_span": 覆盖月份跨度(个),
+            "max_usage": 单次最大用电量(度),
+            "min_usage": 单次最小用电量(度),
         }
     """
     count = len(records)
@@ -26,6 +28,9 @@ def summarize(records: list[Record]) -> dict[str, Union[int, float]]:
     total_fee = sum(r.get("total") or 0 for r in records)
     users = {r.get("username") for r in records if r.get("username")}
     months = {r.get("month") for r in records if r.get("month")}
+    usages = [r.get("usage") or 0 for r in records]
+    max_usage = max(usages) if usages else 0.0
+    min_usage = min(usages) if usages else 0.0
 
     return {
         "count": count,
@@ -34,6 +39,8 @@ def summarize(records: list[Record]) -> dict[str, Union[int, float]]:
         "avg_fee": total_fee / count if count else 0.0,
         "user_count": len(users),
         "month_span": len(months),
+        "max_usage": max_usage,
+        "min_usage": min_usage,
     }
 
 
@@ -42,5 +49,6 @@ def format_summary_text(summary: dict[str, Union[int, float]]) -> str:
     return (
         f"共 {summary['count']} 条记录 | 总用电 {summary['total_usage']:.1f} 度 "
         f"| 总电费 ¥{summary['total_fee']:.2f} | 平均 ¥{summary['avg_fee']:.2f}/次 "
+        f"| 单次最高 {summary.get('max_usage', 0):.1f} 度 "
         f"| 涉及 {summary['user_count']} 位用户"
     )
