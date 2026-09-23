@@ -108,5 +108,55 @@ class TestReportExporter(unittest.TestCase):
         self.assertEqual(n, 3)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class TestLoaderErrorHandling(unittest.TestCase):
+    """测试 CSV 导入的错误处理：跳过非法行 + 汇总报告 + 编码检测"""
+
+    def setUp(self):
+        self.dl = DataLoader(Calculator(TariffManager()))
+        self.tmp = tempfile.mkdtemp()
+
+    def _write_csv(self, text, encoding="utf-8"):
+        path = os.path.join(self.tmp, "t.csv")
+        with open(path, "w", encoding=encoding, newline="") as f:
+            f.write(text)
+        return path
+
+    def test_跳过无效行并汇总(self):
+        """负数、非数字、超大用量、非法月份的行应被跳过，有效行正常导入。"""
+        path = self._write_csv(
+            "用户名,月份,地区,用电量\nA,1,贵州,120\nB,2,贵州,-5\n"
+            "C,3,贵州,abc\nD,13,贵州,100\nE,4,贵州,999999\nF,5,贵州,300\n"
+        )
+        recs = self.dl.load_csv(path, "贵州")
+        self.assertEqual(len(recs), 2)  # 只保留 A 和 F
+        report = self.dl.last_report
+        self.assertEqual(report["loaded"], 2)
+        self.assertEqual(report["skipped"], 4)
+        self.assertEqual(len(report["errors"]), 4)
+
+    def test_文件不存在报错(self):
+        with self.assertRaises(ValueError) as ctx:
+            self.dl.load_csv(os.path.join(self.tmp, "none.csv"), "贵州")
+        self.assertIn("不存在", str(ctx.exception))
+
+    def test_GBK编码自动识别(self):
+        """GBK 编码的 CSV 应能被自动识别并正常导入。"""
+        # GBK 编码写入中文表头
+        path = os.path.join(self.tmp, "gbk.csv")
+        content = "用户名,月份,地区,用电量\nA,1,贵州,120\n"
+        with open(path, "w", encoding="gbk", newline="") as f:
+            f.write(content)
+        recs = self.dl.load_csv(path, "贵州")
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0]["username"], "A")
+        self.assertAlmostEqual(recs[0]["total"], 54.67, places=2)
+
+    def test_重复记录去重(self):
+        """同一用户同一月份出现两次，只保留第一条并记录重复。"""
+        path = self._write_csv(
+            "用户名,月份,地区,用电量\nA,1,贵州,120\nA,1,贵州,300\n"
+        )
+        recs = self.dl.load_csv(path, "贵州")
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0]["usage"], 120)
+        self.assertEqual(len(self.dl.last_report["duplicates"]), 1)
