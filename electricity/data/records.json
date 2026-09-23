@@ -1,5 +1,40 @@
 [
   {
+    "username": "A",
+    "month": 1,
+    "region": "贵州",
+    "usage": 120.0,
+    "total": 54.67
+  },
+  {
+    "username": "",
+    "month": 2,
+    "region": "贵州",
+    "usage": 200.0,
+    "total": 91.12
+  },
+  {
+    "username": "H",
+    "month": 6,
+    "region": "贵州",
+    "usage": 250.0,
+    "total": 113.9
+  },
+  {
+    "username": "啊",
+    "month": 2,
+    "region": "贵州",
+    "usage": 555.0,
+    "total": 252.86
+  },
+  {
+    "username": "啊",
+    "month": 2,
+    "region": "贵州",
+    "usage": 555.0,
+    "total": 252.86
+  },
+  {
     "username": "大碗大碗的",
     "month": 2,
     "region": "贵州",
