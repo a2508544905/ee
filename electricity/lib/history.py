@@ -143,3 +143,19 @@ class HistoryManager:
         conn.execute("DELETE FROM history")
         conn.commit()
         conn.close()
+
+    def delete_by_id(self, record_id: int) -> bool:
+        """按记录 id 删除一条历史记录。
+
+        Args:
+            record_id: 要删除的记录 id。
+
+        Returns:
+            bool: 是否成功删除了 1 条（不存在则返回 False）。
+        """
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.execute("DELETE FROM history WHERE id = ?", (record_id,))
+        conn.commit()
+        deleted = cursor.rowcount > 0
+        conn.close()
+        return deleted

@@ -46,14 +46,6 @@ def _setup_chinese_font():
 _setup_chinese_font()
 
 
-def _short_time(created_at):
-    """把 'YYYY-MM-DD HH:MM:SS' 压缩成 'MM-DD HH:MM'，用于横轴标签。"""
-    try:
-        return datetime.strptime(created_at[:16], "%Y-%m-%d %H:%M").strftime("%m-%d %H:%M")
-    except (ValueError, TypeError):
-        return str(created_at)
-
-
 def _new_figure():
     """创建并返回一个空白 Figure 对象。"""
     return Figure(figsize=_FIG_SIZE, dpi=_DPI)
@@ -69,40 +61,70 @@ def _empty_figure(text):
     return fig
 
 
+def _daily_key(created_at):
+    """把 'YYYY-MM-DD HH:MM:SS' 压缩成日期 'MM-DD'，用于按天汇总横轴。"""
+    try:
+        return datetime.strptime(str(created_at)[:10], "%Y-%m-%d").strftime("%m-%d")
+    except (ValueError, TypeError):
+        return str(created_at)[:10]
+
+
 def generate_trend_chart(records):
-    """生成用电趋势图：横轴记录时间，左轴用电量、右轴电费（双轴）。
+    """生成用电趋势图：按天汇总，横轴日期，左轴用电量、右轴电费（双轴）。
+
+    说明：为了清晰展示，横坐标改为「天」粒度（每天汇总电量与电费），
+    避免小时级时间戳过多导致标签重叠；所有原始数据点保留，不做异常剔除。
 
     Args:
-        records: 历史记录列表，按 created_at 升序绘制。
+        records: 历史记录列表，按 created_at 升序、按天聚合绘制。
 
     Returns:
-        Figure: 双轴折线图。
+        Figure: 双轴柱线组合图（电量柱 + 电费线）。
     """
     records = [r for r in (records or [])]
     if not records:
         return _empty_figure("暂无历史数据")
-    records = sorted(records, key=lambda r: r.get("created_at") or "")
-    labels = [_short_time(r.get("created_at")) for r in records]
-    usages = [r.get("usage") or 0 for r in records]
-    totals = [r.get("total") or 0 for r in records]
+
+    # 按天聚合：累计每日电量与电费
+    agg = {}
+    for r in records:
+        day = _daily_key(r.get("created_at"))
+        d = agg.setdefault(day, [0.0, 0.0])
+        d[0] += r.get("usage") or 0
+        d[1] += r.get("total") or 0
+    days = sorted(agg)                      # 横轴日期（"MM-DD"）
+    usages = [agg[d][0] for d in days]
+    totals = [agg[d][1] for d in days]
 
     fig = _new_figure()
     ax1 = fig.add_subplot(111)
-    ax1.plot(labels, usages, marker="o", color=_COLOR_MAIN, label="用电量(度)")
-    ax1.set_xlabel("记录时间")
+    xpos = list(range(len(days)))
+    # 左轴：每日用电量柱状图
+    ax1.bar(xpos, usages, color=_COLOR_MAIN, alpha=0.8, label="用电量(度)")
+    ax1.set_xlabel("记录日期")
     ax1.set_ylabel("用电量(度)", color=_COLOR_MAIN)
     ax1.tick_params(axis="y", labelcolor=_COLOR_MAIN)
-    ax1.grid(True, linestyle="--", alpha=0.4)
+    ax1.set_xticks(xpos)
+    ax1.set_xticklabels(days, rotation=30, ha="right", fontsize=8)
+    ax1.grid(True, linestyle="--", alpha=0.4, axis="y")
 
+    # 右轴：每日电费折线
     ax2 = ax1.twinx()
-    ax2.plot(labels, totals, marker="s", color=_COLOR_ACCENT, label="电费(元)")
+    ax2.plot(xpos, totals, color=_COLOR_ACCENT, marker="o",
+             markersize=4, linewidth=1.8, label="电费(元)")
     ax2.set_ylabel("电费(元)", color=_COLOR_ACCENT)
     ax2.tick_params(axis="y", labelcolor=_COLOR_ACCENT)
+    # 对齐左右轴零点，记录电量与电费在视觉上保持同一起点
+    ax1.set_ylim(bottom=0)
+    ax2.set_ylim(bottom=0)
 
-    lines = ax1.get_lines() + ax2.get_lines()
-    fig.legend(lines, [l.get_label() for l in lines], loc="upper left")
-    if len(labels) > 6:
-        ax1.tick_params(axis="x", rotation=30, labelsize=8)
+    # 图例二合一（左上角）
+    from matplotlib.patches import Patch
+    legend_handles = [
+        Patch(color=_COLOR_MAIN, alpha=0.8, label="用电量(度)"),
+        ax2.get_lines()[0],
+    ]
+    ax1.legend(handles=legend_handles, loc="upper left")
     fig.tight_layout()
     return fig
 

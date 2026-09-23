@@ -50,6 +50,21 @@ class TestHistory(unittest.TestCase):
         self.h.clear()
         self.assertEqual(self.h.query(), [])
 
+    def test_delete_by_id删除单条(self):
+        self.h.save("贵州", 100, 45.56, [], 1, username="A", month=1)
+        self.h.save("贵州", 200, 91.12, [], 1, username="B", month=1)
+        rows = self.h.query()
+        target_id = rows[0]["id"]
+        # 删除其中一条，剩一条
+        self.assertTrue(self.h.delete_by_id(target_id))
+        left = self.h.query()
+        self.assertEqual(len(left), 1)
+        self.assertNotIn(target_id, [r["id"] for r in left])
+
+    def test_delete不存在的id返回False(self):
+        self.h.save("贵州", 100, 45.56, [], 1, username="A", month=1)
+        self.assertFalse(self.h.delete_by_id(99999))
+
 
 if __name__ == "__main__":
     unittest.main()

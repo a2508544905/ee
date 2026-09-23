@@ -105,7 +105,7 @@ class MainWindow:
             font=("Consolas", 9), anchor="w",
         ).pack(fill="x", pady=(0, 4))
 
-        self.record_table = RecordTable(left)
+        self.record_table = RecordTable(left, on_delete_selected=self._on_delete_record)
         self.record_table.pack(fill="both", expand=True)
 
         # 异常提示
@@ -330,19 +330,9 @@ class MainWindow:
         )
         self._persist_to_json()  # 录入后同步到 JSON 持久化
 
-        # 刷新表格（追加最新一条在顶部）
-        latest = {
-            "username": username or "",
-            "month": month or "",
-            "region": region,
-            "usage": usage,
-            "total": result["total"],
-            "created_at": self._now_str(),
-        }
-        self.record_table.prepend(latest)
-
-        # 同步最新记录到图表区，并更新当前地区、汇总与异常提示
+        # 用最新数据刷新表格（含新增记录，行内带真实 id 支持删除）
         data = self._load_records_data()
+        self.record_table.load(data)
         self.more_panel.set_records(data)
         self.more_panel.set_region(region)
         self._update_summary(data)
@@ -444,6 +434,27 @@ class MainWindow:
         self.more_panel.set_records(data)
         self._update_summary(data)
         self._update_alerts(data)
+
+    def _on_delete_record(self, record_id):
+        """删除指定 id 的历史记录，并刷新界面与持久化。
+
+        Args:
+            record_id: 要删除的记录 id（来自表格选中行）。
+        """
+        if record_id is None:
+            return
+        if not messagebox.askyesno(
+                "确认删除", "确定要删除这条用电记录吗？删除后不可恢复。"):
+            self.status_var.set("已取消删除")
+            return
+        deleted = self.history.delete_by_id(record_id)
+        if not deleted:
+            self.status_var.set("记录不存在，可能已被删除")
+            return
+        self._persist_to_json()   # 删除后同步 SQLite -> records.json
+        self._refresh_after_change()
+        logger.info("已删除记录 id=%s", record_id)
+        self.status_var.set("已删除该记录")
 
     @staticmethod
     def _now_str():
